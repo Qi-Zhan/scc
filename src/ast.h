@@ -31,6 +31,9 @@
 // type           → "int" | "float" | "string" | "bool" | "void"
 
 typedef struct Expr Expr;
+typedef struct Stmt Stmt;
+typedef struct Decl Decl;
+typedef struct Param Param;
 
 typedef enum {
     OP_ADD,
@@ -66,6 +69,11 @@ typedef enum {
     TYPE_IDENTIFIER,
 } Type;
 
+struct Param {
+    String name;
+    String type;
+};
+
 struct Expr {
     enum {
         EXPR_ASSIGNMENT,
@@ -97,6 +105,7 @@ struct Expr {
                 float floatVal;
                 String stringVal;
                 bool boolVal;
+                String idVal;
             } value;
             Type type;
         } literal;
@@ -110,24 +119,23 @@ struct Expr {
     };
 };
 
-#define assign(value) ((value).assignment)
-
-typedef struct Stmt Stmt;
-
-typedef struct Decl Decl;
-
 struct Stmt {
-    enum { STMT_BLOCK, STMT_EXPRESSION, STMT_IF, STMT_RETURN, STMT_WHILE } type;
+    enum {
+        STMT_BLOCK,
+        STMT_EXPRESSION,
+        STMT_IF,
+        STMT_RETURN,
+        STMT_WHILE,
+        STMT_DECL,
+    } type;
     union {
         struct {
-            Decl** declarations;
-            int declarationsCount;
             Stmt** statements;
-            int statementsCount;
+            int count;
         } block;
         struct {
             Expr* expression;
-        } expression;
+        } expr;
         struct {
             Expr* condition;
             Stmt* thenBranch;
@@ -140,6 +148,9 @@ struct Stmt {
             Expr* condition;
             Stmt* body;
         } whileStmt;
+        struct {
+            Decl* decl;
+        } decl;
     };
 };
 
@@ -152,9 +163,8 @@ struct Decl {
     union {
         struct {
             String name;
-            String* params;
-            String* parameterTypes;
-            int parametersCount;
+            Param** parameters;
+            int count;
             String returnType;
             Stmt* body;
         } function;

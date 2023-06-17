@@ -3,6 +3,7 @@
 // recursive descent + Pratt parser for expression
 
 static Expr* parsePrecedence(Parser* parser, Precedence precedence);
+static Stmt* block(Parser* parser);
 
 static ParseRule rules[] = {
     /*
@@ -193,10 +194,22 @@ static Decl* functionDecl(Parser* parser, Token type, Token name) {
     decl->type = DECL_FUNCTION;
     decl->function.returnType = tokenToString(type);
     decl->function.name = tokenToString(name);
-    decl->function.params = NULL;
-    decl->function.body = NULL;
-    parser->current++;
-    panic("function declaration not implemented yet\n");
+    decl->function.parameters = NULL;
+    decl->function.count = 0;
+    if (!match (parser, TOKEN_RIGHT_PAREN)) {
+        decl->function.parameters = malloc(sizeof(Param*) * 10);
+        do {
+            Token paramType = advance(parser);
+            Token paramName = eat(parser, TOKEN_IDENTIFIER,
+                                  "expected identifier after type in parameter");
+            Param* param = malloc(sizeof(Param));
+            param->type = tokenToString(paramType);
+            param->name = tokenToString(paramName);
+            decl->function.parameters[decl->function.count++] = param;
+        } while (match(parser, TOKEN_COMMA));
+        eat(parser, TOKEN_RIGHT_PAREN, "expected ')' after parameters");
+    }
+    decl->function.body = block(parser);
     return decl;
 }
 
@@ -207,7 +220,7 @@ Decl* declaration(Parser* parser) {
     }
     Token type = advance(parser);
     Token name =
-        eat(parser, TOKEN_IDENTIFIER, "expected identifier after type");
+        eat(parser, TOKEN_IDENTIFIER, "expected identifier after type in declaration");
     if (match(parser, TOKEN_LEFT_PAREN)) {
         return functionDecl(parser, type, name);
     } else {
@@ -264,10 +277,82 @@ Expr* expression(Parser* parser) {
     return parsePrecedence(parser, PREC_ASSIGNMENT);
 }
 
+static Stmt* block(Parser* parser) {
+    eat(parser, TOKEN_LEFT_BRACE, "expected '{' before block");
+    Stmt* stmt = malloc(sizeof(Stmt));
+    stmt->type = STMT_BLOCK;
+    stmt->block.count = 0;
+    stmt->block.statements = malloc(sizeof(Stmt*) * 10);
+    while (!match(parser, TOKEN_RIGHT_BRACE)) {
+        stmt->block.statements[stmt->block.count] = statement(parser);
+        stmt->block.count++;
+    }
+    return stmt;
+}
+
+static Stmt* ifStmt(Parser* parser) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    stmt->type = STMT_IF;
+    stmt->ifStmt.condition = expression(parser);
+    stmt->ifStmt.thenBranch = statement(parser);
+    stmt->ifStmt.elseBranch = NULL;
+    if (match(parser, TOKEN_ELSE)) {
+        stmt->ifStmt.elseBranch = statement(parser);
+    }
+    return stmt;
+}
+
+static Stmt* whileStmt(Parser* parser) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    stmt->type = STMT_WHILE;
+    stmt->whileStmt.condition = expression(parser);
+    stmt->whileStmt.body = block(parser);
+    return stmt;
+}
+
+static Stmt* exprStmt(Parser* parser) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    stmt->type = STMT_EXPRESSION;
+    stmt->expr.expression = expression(parser);
+    return stmt;
+}
+
+static Stmt* returnStmt(Parser* parser) {
+    eat(parser, TOKEN_RETURN, "expected 'return' before return statement");
+    Stmt* stmt = malloc(sizeof(Stmt));
+    stmt->type = STMT_RETURN;
+    stmt->returnStmt.value = expression(parser);
+    eat(parser, TOKEN_SEMICOLON, "expected ';' after return statement");
+    return stmt;
+}
+
 // parse statement
 Stmt* statement(Parser* parser) {
-    parser->current = parser->previous;
-    return NULL;
+    switch (parser->tokens[parser->current].type) {
+        case TOKEN_LEFT_BRACE:
+            return block(parser);
+        case TOKEN_IF:
+            return ifStmt(parser);
+        case TOKEN_WHILE:
+            return whileStmt(parser);
+        case TOKEN_RETURN:
+            return returnStmt(parser);
+        // TODO: type or struct declaration, not consider type alias
+        case TOKEN_TYPENAME:
+        case TOKEN_STRUCT: {
+            Decl* decl = declaration(parser);
+            Stmt* stmt = malloc(sizeof(Stmt));
+            stmt->type = STMT_DECL;
+            stmt->decl.decl = decl;
+            return stmt;
+        }
+        // case TOKEN_BREAK:
+        //     return breakStmt(parser);
+        // case TOKEN_CONTINUE:
+        //     return continueStmt(parser);
+        default:
+            return exprStmt(parser);
+    }
 }
 
 // parse program

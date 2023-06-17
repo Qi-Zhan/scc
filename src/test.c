@@ -24,12 +24,14 @@ static void test_parse_var_def() {
 }
 
 static void test_parse_fun_def() {
-    char* buffer = "int main() { return 0; }";
+    char* buffer = "int main(int i, int j) { return 0; }";
     Program* program = parse_(buffer);
+    assert(program->count == 1);
     assert(program->declarations[0]->type == DECL_FUNCTION);
     assert(strcmp(program->declarations[0]->function.name.chars, "main") == 0);
     assert(strcmp(program->declarations[0]->function.returnType.chars, "int") ==
            0);
+    printProgram(program);
 }
 
 // test pratt parser
@@ -85,7 +87,6 @@ static void test_parse_exp() {
         initParser(parser, scanTokens(buffer));
         Expr* expr = expression(parser);
         char* buf = sprintExpr(expr);
-        printf("%s\n", buf);
         assert(strcmp(buf, "(aac3 call (& b))") == 0);
     }
 }

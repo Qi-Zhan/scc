@@ -40,11 +40,9 @@ typedef enum {
     TOKEN_ELSE,
     TOKEN_WHILE,
     TOKEN_RETURN,
-    TOKEN_INT,
-    TOKEN_FLOAT,
-    TOKEN_BOOL,
     TOKEN_STATIC,
-    TOKEN_VOID,
+    // encode int, float, ...
+    TOKEN_TYPENAME,
     TOKEN_TRUE,
     TOKEN_FALSE,
     TOKEN_TYPEDEF,

@@ -10,8 +10,6 @@ void printToken(Token* token) {
         case TOKEN_ELSE:
         case TOKEN_WHILE:
         case TOKEN_RETURN:
-        case TOKEN_INT:
-        case TOKEN_FLOAT:
             // print aligned
             printf("keyword  ");
             break;
@@ -40,6 +38,9 @@ void printToken(Token* token) {
             break;
         case TOKEN_ERROR:
             printf("error    ");
+            break;
+        case TOKEN_TYPENAME:
+            printf("type     ");
             break;
         default:
             printf("token    ");
@@ -152,16 +153,25 @@ void convertKeyword(Token* token) {
         case 2:
             if (memcmp(token->start, "if", 2) == 0) token->type = TOKEN_IF;
         case 3:
-            if (memcmp(token->start, "int", 3) == 0) token->type = TOKEN_INT;
-            if (memcmp(token->start, "for", 3) == 0) token->type = TOKEN_FOR;
+            if (memcmp(token->start, "int", 3) == 0)
+                token->type = TOKEN_TYPENAME;
+            if (memcmp(token->start, "for", 3) == 0) 
+                token->type = TOKEN_FOR;
         case 4:
-            if (memcmp(token->start, "else", 4) == 0) token->type = TOKEN_ELSE;
-            if (memcmp(token->start, "while", 5) == 0)
-                token->type = TOKEN_WHILE;
+            if (memcmp(token->start, "else", 4) == 0) 
+                token->type = TOKEN_ELSE;
+            if (memcmp(token->start, "bool", 4) == 0)
+                token->type = TOKEN_TYPENAME;
+            if (memcmp(token->start, "char", 4) == 0)
+                token->type = TOKEN_TYPENAME;
+            if (memcmp(token->start, "void", 4) == 0)
+                token->type = TOKEN_TYPENAME;
             break;
         case 5:
+            if (memcmp(token->start, "while", 5) == 0)
+                token->type = TOKEN_WHILE;
             if (memcmp(token->start, "float", 5) == 0)
-                token->type = TOKEN_FLOAT;
+                token->type = TOKEN_TYPENAME;
             break;
         case 6:
             if (memcmp(token->start, "return", 6) == 0)
@@ -291,65 +301,66 @@ Token* scanTokens(const char* source) {
 }
 
 String tokenType(TokenType type) {
-    switch (type)
-    {
-    case TOKEN_LEFT_PAREN:
-        return makeString(")", 1);
-    case TOKEN_RIGHT_PAREN:
-        return makeString("(", 1);
-    case TOKEN_LEFT_BRACE:
-        return makeString("{", 1);
-    case TOKEN_RIGHT_BRACE:
-        return makeString("}", 1);
-    case TOKEN_LEFT_BRACKET:
-        return makeString("[", 1);
-    case TOKEN_RIGHT_BRACKET:
-        return makeString("]", 1);
-    case TOKEN_COMMA:
-        return makeString(",", 1);
-    case TOKEN_DOT: 
-        return makeString(".", 1);
-    case TOKEN_MINUS:
-        return makeString("-", 1);
-    case TOKEN_PLUS:    
-        return makeString("+", 1);
-    case TOKEN_SEMICOLON:
-        return makeString(";", 1);
-    case TOKEN_SLASH:   
-        return makeString("/", 1);
-    case TOKEN_STAR:
-        return makeString("*", 1);
-    case TOKEN_AT:
-        return makeString("@", 1);
-    case TOKEN_BANG:
-        return makeString("!", 1);
-    case TOKEN_BANG_EQUAL:
-        return makeString("!=", 2);
-    case TOKEN_EQUAL:
-        return makeString("=", 1);
-    case TOKEN_EQUAL_EQUAL:
-        return makeString("==", 2);
-    case TOKEN_GREATER:
-        return makeString(">", 1);
-    case TOKEN_GREATER_EQUAL:
-        return makeString(">=", 2);
-    case TOKEN_LESS:
-        return makeString("<", 1);
-    case TOKEN_LESS_EQUAL:
-        return makeString("<=", 2);
-    case TOKEN_IDENTIFIER:
-        return makeString("identifier", 10);
-    case TOKEN_STRING:
-        return makeString("string", 6);
-    case TOKEN_NUMBER:  
-        return makeString("number", 6);
-    case TOKEN_AND:
-        return makeString("&&", 2);
-    case TOKEN_REF:
-        return makeString("&", 1);
-    default:
-        panic("Unknown token type %d", type);
-        break;
+    switch (type) {
+        case TOKEN_LEFT_PAREN:
+            return makeString(")", 1);
+        case TOKEN_RIGHT_PAREN:
+            return makeString("(", 1);
+        case TOKEN_LEFT_BRACE:
+            return makeString("{", 1);
+        case TOKEN_RIGHT_BRACE:
+            return makeString("}", 1);
+        case TOKEN_LEFT_BRACKET:
+            return makeString("[", 1);
+        case TOKEN_RIGHT_BRACKET:
+            return makeString("]", 1);
+        case TOKEN_COMMA:
+            return makeString(",", 1);
+        case TOKEN_DOT:
+            return makeString(".", 1);
+        case TOKEN_MINUS:
+            return makeString("-", 1);
+        case TOKEN_PLUS:
+            return makeString("+", 1);
+        case TOKEN_SEMICOLON:
+            return makeString(";", 1);
+        case TOKEN_SLASH:
+            return makeString("/", 1);
+        case TOKEN_STAR:
+            return makeString("*", 1);
+        case TOKEN_AT:
+            return makeString("@", 1);
+        case TOKEN_BANG:
+            return makeString("!", 1);
+        case TOKEN_BANG_EQUAL:
+            return makeString("!=", 2);
+        case TOKEN_EQUAL:
+            return makeString("=", 1);
+        case TOKEN_EQUAL_EQUAL:
+            return makeString("==", 2);
+        case TOKEN_GREATER:
+            return makeString(">", 1);
+        case TOKEN_GREATER_EQUAL:
+            return makeString(">=", 2);
+        case TOKEN_LESS:
+            return makeString("<", 1);
+        case TOKEN_LESS_EQUAL:
+            return makeString("<=", 2);
+        case TOKEN_IDENTIFIER:
+            return makeString("identifier", 10);
+        case TOKEN_STRING:
+            return makeString("string", 6);
+        case TOKEN_NUMBER:
+            return makeString("number", 6);
+        case TOKEN_AND:
+            return makeString("&&", 2);
+        case TOKEN_REF:
+            return makeString("&", 1);
+        case TOKEN_RETURN:
+            return makeString("return", 6);
+        default:
+            panic("Unknown token type %d", type);
+            break;
     }
     return makeString("unknown", 7);
 }

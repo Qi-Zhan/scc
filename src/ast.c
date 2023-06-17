@@ -86,6 +86,9 @@ void printExpr(Expr* expr) {
                     printf("%s",
                            expr->literal.value.boolVal ? "true" : "false");
                     break;
+                case TYPE_IDENTIFIER:
+                    printf("%s", expr->literal.value.idVal.chars);
+                    break;
                 default:
                     panic("unknown literal type %d\n", expr->literal.type);
             }
@@ -111,17 +114,12 @@ void printExpr(Expr* expr) {
 void printStmt(Stmt* stmt) {
     switch (stmt->type) {
         case STMT_EXPRESSION:
-            printExpr(stmt->expression.expression);
+            printExpr(stmt->expr.expression);
             break;
         case STMT_BLOCK:
             printf("{\n");
-            for (int i = 0; i < stmt->block.declarationsCount; i++) {
-                printDecl(stmt->block.declarations[i]);
-                printf("\n");
-            }
-            for (int i = 0; i < stmt->block.statementsCount; i++) {
+            for (int i = 0; i < stmt->block.count; i++) {
                 printStmt(stmt->block.statements[i]);
-                printf("\n");
             }
             printf("}");
             break;
@@ -154,9 +152,9 @@ void printDecl(Decl* decl) {
     switch (decl->type) {
         case DECL_FUNCTION:
             printf("fn %s(", decl->function.name.chars);
-            for (int i = 0; i < decl->function.parametersCount; i++) {
-                printf("%s", decl->function.params[i].chars);
-                if (i < decl->function.parametersCount - 1) {
+            for (int i = 0; i < decl->function.count; i++) {
+                printf("%s", decl->function.parameters[i]->name.chars);
+                if (i < decl->function.count - 1) {
                     printf(", ");
                 }
             }

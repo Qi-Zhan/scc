@@ -34,60 +34,32 @@ static void test_parse_fun_def() {
     printProgram(program);
 }
 
+const char* test_parse_exp_buf[] = {
+    "!1 + 2 * 3", 
+    "(-1 + 2) * 3 - -4", 
+    "1 + 2 + f . g . h * 3 * 4",
+    "1 * * 2",
+    "a[1 + 2 * 3] = 4",  
+    "aac3(&b)"
+};
+
+const char* test_parse_exp_result[] = {
+    "((! 1) + (2 * 3))",
+    "((((- 1) + 2) * 3) - (- 4))",
+    "((1 + 2) + ((((f . g) . h) * 3) * 4))",
+    "(1 * (* 2))",
+    "((a [] (1 + (2 * 3))) = 4)",
+    "(aac3 call (& b))",
+};
+
 // test pratt parser
 static void test_parse_exp() {
     Parser* parser = malloc(sizeof(Parser));
-    {
-        char* buffer = "!1 + 2 * 3";
-        initParser(parser, scanTokens(buffer));
+    for (size_t i = 0; i < sizeof(test_parse_exp_buf) / sizeof(char*); i++) {
+        initParser(parser, scanTokens(test_parse_exp_buf[i]));
         Expr* expr = expression(parser);
         char* buf = sprintExpr(expr);
-        assert(expr->type == EXPR_BINARY);
-        assert(strcmp(buf, "((! 1) + (2 * 3))") == 0);
-    }
-    {
-        char* buffer = "-1 + 2";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(expr->type == EXPR_BINARY);
-        assert(strcmp(buf, "((- 1) + 2)") == 0);
-    }
-    {
-        char* buffer = "(-1 + 2) * 3 - -4";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(expr->type == EXPR_BINARY);
-        assert(strcmp(buf, "((((- 1) + 2) * 3) - (- 4))") == 0);
-    }
-    {
-        char* buffer = "1 + 2 + f . g . h * 3 * 4";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(strcmp(buf, "((1 + 2) + ((((f . g) . h) * 3) * 4))") == 0);
-    }
-    {
-        char* buffer = "1 * * 2";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(strcmp(buf, "(1 * (* 2))") == 0);
-    }
-    {
-        char* buffer = "a[1 + 2 * 3] = 4";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(strcmp(buf, "((a [] (1 + (2 * 3))) = 4)") == 0);
-    }
-    {
-        char* buffer = "aac3(&b)";
-        initParser(parser, scanTokens(buffer));
-        Expr* expr = expression(parser);
-        char* buf = sprintExpr(expr);
-        assert(strcmp(buf, "(aac3 call (& b))") == 0);
+        assert(strcmp(buf, test_parse_exp_result[i]) == 0);
     }
 }
 

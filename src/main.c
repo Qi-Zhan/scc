@@ -27,8 +27,6 @@ void read() { printf("read() is implemented in non-bootstrap mode\n"); }
 #endif
 #endif
 
-//---------------------- IR-Gen-----------------------
-
 //---------------------- Assembly----------------------
 
 //---------------------- Pipeline----------------------
@@ -47,6 +45,11 @@ void compile(const char* buffer) {
     // parse
     Program* program = parse(tokens);
     if (PRINT_AST) printProgram(program);
+    // semantic analysis
+
+    // ir gen
+
+    // asm gen
 }
 
 static void repl() {
@@ -88,7 +91,6 @@ static void runFile(char* filename) {
 }
 
 //---------------------- Main--------------------------
-
 int main(int argc, char* argv[]) {
     if (TEST) test_parse();
     if (argc == 1) {

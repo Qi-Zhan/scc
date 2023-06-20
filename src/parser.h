@@ -50,4 +50,6 @@ Expr* atom(Parser* parser);
 
 Expr* unary(Parser* parser);
 
+Expr* call(Parser* parser);
+
 #endif

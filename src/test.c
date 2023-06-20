@@ -23,15 +23,47 @@ static void test_parse_var_def() {
            TYPE_INT);
 }
 
+static void test_parse_stmt() {
+    Parser* parser = malloc(sizeof(Parser));
+    // if stmt
+    {
+        char* buffer = "if (a == 1) { return 1; }";
+        initParser(parser, scanTokens(buffer));
+        Stmt* stmt = statement(parser);
+        assert(stmt->type == STMT_IF);
+        assert(stmt->ifStmt.condition->type == EXPR_BINARY);
+        assert(stmt->ifStmt.thenBranch->type == STMT_BLOCK);
+        assert(stmt->ifStmt.elseBranch == NULL);
+    }
+    // if else
+    {
+        char buffer[] = "if (a == 1) { return 1; } else { return 2; }";
+        initParser(parser, scanTokens(buffer));
+        Stmt* stmt = statement(parser);
+        assert(stmt->type == STMT_IF);
+        assert(stmt->ifStmt.condition->type == EXPR_BINARY);
+        assert(stmt->ifStmt.thenBranch->type == STMT_BLOCK);
+        assert(stmt->ifStmt.elseBranch->type == STMT_BLOCK);
+    }
+    // while
+    {
+        char buffer[] = "while (a == 1) { return 1; }";
+        initParser(parser, scanTokens(buffer));
+        Stmt* stmt = statement(parser);
+        assert(stmt->type == STMT_WHILE);
+        assert(stmt->whileStmt.condition->type == EXPR_BINARY);
+        assert(stmt->whileStmt.body->type == STMT_BLOCK);
+    }
+}
+
 static void test_parse_fun_def() {
-    char* buffer = "int main(int i, int j) { return 0; }";
+    char* buffer = "int main(int i, int j) { int c = i * j + 3; return c; }";
     Program* program = parse_(buffer);
     assert(program->count == 1);
     assert(program->declarations[0]->type == DECL_FUNCTION);
     assert(strcmp(program->declarations[0]->function.name.chars, "main") == 0);
     assert(strcmp(program->declarations[0]->function.returnType.chars, "int") ==
            0);
-    printProgram(program);
 }
 
 const char* test_parse_exp_buf[] = {
@@ -40,7 +72,8 @@ const char* test_parse_exp_buf[] = {
     "1 + 2 + f . g . h * 3 * 4",
     "1 * * 2",
     "a[1 + 2 * 3] = 4",  
-    "aac3(&b)"
+    "aac3(&b)",
+    "cal(add(a,b), minus(a,b))"
 };
 
 const char* test_parse_exp_result[] = {
@@ -49,7 +82,8 @@ const char* test_parse_exp_result[] = {
     "((1 + 2) + ((((f . g) . h) * 3) * 4))",
     "(1 * (* 2))",
     "((a [] (1 + (2 * 3))) = 4)",
-    "(aac3 call (& b))",
+    "aac3((& b))",
+    "cal(add(a, b), minus(a, b))"
 };
 
 // test pratt parser
@@ -68,5 +102,6 @@ void test_parse() {
     test_parse_exp();
     test_parse_var_def();
     test_parse_fun_def();
-    printf("\033[0;32mAll tests passed!\033[0m\n");
+    test_parse_stmt();
+    printf("\033[0;32mAll unit tests passed!\033[0m\n");
 }

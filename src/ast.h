@@ -95,9 +95,9 @@ struct Expr {
             Expr* right;
         } binary;
         struct {
-            String name;
+            Expr* callee;
             Expr** arguments;
-            int argumentsCount;
+            int argcount;
         } call;
         struct {
             union literal {
@@ -194,6 +194,7 @@ void printStmt(Stmt* stmt);
 void printDecl(Decl* decl);
 
 char* sprintExpr(Expr* expr);
+char* sprintStmt(Stmt* stmt);
 
 Op getOp(Token* token, bool isBinary);
 

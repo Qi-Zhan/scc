@@ -9,7 +9,7 @@ static ParseRule rules[] = {
     /*
     TOKEN                   PREFIX     INFIX   PRECEDENCE
     */
-    [TOKEN_LEFT_PAREN]    = {grouping, binary,   PREC_CALL},
+    [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
     [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,     PREC_NONE},
     [TOKEN_LEFT_BRACE]    = {NULL,     NULL,     PREC_NONE}, 
     [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,     PREC_NONE},
@@ -21,6 +21,7 @@ static ParseRule rules[] = {
     [TOKEN_PLUS]          = {NULL,     binary,   PREC_TERM},
     [TOKEN_SLASH]         = {NULL,     binary,   PREC_FACTOR},
     [TOKEN_STAR]          = {unary,    binary,   PREC_FACTOR},
+    [TOKEN_AT]            = {NULL,     binary,   PREC_FACTOR},
     [TOKEN_REF]           = {unary,    NULL,     PREC_UNARY},
     [TOKEN_BANG]          = {unary,    NULL,     PREC_UNARY},
     [TOKEN_BANG_EQUAL]    = {NULL,     binary,   PREC_EQUALITY},
@@ -167,6 +168,21 @@ Expr* unary(Parser* parser) {
     return new;
 }
 
+Expr* call(Parser* parser) {
+    Expr* expr = malloc(sizeof(Expr));
+    expr->type = EXPR_CALL;
+    expr->call.callee = getLeft(parser);
+    expr->call.arguments= malloc(sizeof(Expr*) * 8);
+    expr->call.argcount = 0;
+    if (!match(parser, TOKEN_RIGHT_PAREN)) {
+        do {
+            expr->call.arguments[expr->call.argcount++] = expression(parser);
+        } while (match(parser, TOKEN_COMMA));
+        eat(parser, TOKEN_RIGHT_PAREN, "expected ')' after arguments");
+    }
+    return expr;
+}
+
 Expr* binary(Parser* parser) {
     Token op = parser->tokens[parser->previous];
     Expr* expr = malloc(sizeof(Expr));
@@ -291,10 +307,13 @@ static Stmt* block(Parser* parser) {
 }
 
 static Stmt* ifStmt(Parser* parser) {
+    advance(parser);
     Stmt* stmt = malloc(sizeof(Stmt));
     stmt->type = STMT_IF;
+    eat(parser, TOKEN_LEFT_PAREN, "expected '(' after 'if'");
     stmt->ifStmt.condition = expression(parser);
-    stmt->ifStmt.thenBranch = statement(parser);
+    eat(parser, TOKEN_RIGHT_PAREN, "expected ')' after if condition");
+    stmt->ifStmt.thenBranch = block(parser);
     stmt->ifStmt.elseBranch = NULL;
     if (match(parser, TOKEN_ELSE)) {
         stmt->ifStmt.elseBranch = statement(parser);
@@ -303,9 +322,12 @@ static Stmt* ifStmt(Parser* parser) {
 }
 
 static Stmt* whileStmt(Parser* parser) {
+    eat(parser, TOKEN_WHILE, "expected 'while' before while statement");
     Stmt* stmt = malloc(sizeof(Stmt));
     stmt->type = STMT_WHILE;
+    eat(parser, TOKEN_LEFT_PAREN, "expected '(' after 'while'");
     stmt->whileStmt.condition = expression(parser);
+    eat(parser, TOKEN_RIGHT_PAREN, "expected ')' after while condition");
     stmt->whileStmt.body = block(parser);
     return stmt;
 }
@@ -314,6 +336,7 @@ static Stmt* exprStmt(Parser* parser) {
     Stmt* stmt = malloc(sizeof(Stmt));
     stmt->type = STMT_EXPRESSION;
     stmt->expr.expression = expression(parser);
+    eat(parser, TOKEN_SEMICOLON, "expected ';' after expression");
     return stmt;
 }
 
@@ -321,6 +344,11 @@ static Stmt* returnStmt(Parser* parser) {
     eat(parser, TOKEN_RETURN, "expected 'return' before return statement");
     Stmt* stmt = malloc(sizeof(Stmt));
     stmt->type = STMT_RETURN;
+    // return without value
+    if (match(parser, TOKEN_SEMICOLON)) {
+        stmt->returnStmt.value = NULL;
+        return stmt;
+    }
     stmt->returnStmt.value = expression(parser);
     eat(parser, TOKEN_SEMICOLON, "expected ';' after return statement");
     return stmt;

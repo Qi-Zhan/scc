@@ -358,6 +358,14 @@ String tokenType(TokenType type) {
             return makeString("&", 1);
         case TOKEN_RETURN:
             return makeString("return", 6);
+        case TOKEN_IF:
+            return makeString("if", 2);
+        case TOKEN_ELSE:
+            return makeString("else", 4);
+        case TOKEN_WHILE:
+            return makeString("while", 5);
+        case TOKEN_EOF:
+            return makeString("eof", 3);
         default:
             panic("Unknown token type %d", type);
             break;

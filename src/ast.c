@@ -97,10 +97,11 @@ void printExpr(Expr* expr) {
             printf("%s", expr->variable.name.chars);
             break;
         case EXPR_CALL:
-            printf("%s(", expr->call.name.chars);
-            for (int i = 0; i < expr->call.argumentsCount; i++) {
+            printExpr(expr->call.callee);
+            printf("(");
+            for (int i = 0; i < expr->call.argcount; i++) {
                 printExpr(expr->call.arguments[i]);
-                if (i < expr->call.argumentsCount - 1) {
+                if (i < expr->call.argcount - 1) {
                     printf(", ");
                 }
             }
@@ -141,7 +142,12 @@ void printStmt(Stmt* stmt) {
             break;
         case STMT_RETURN:
             printf("return ");
-            printExpr(stmt->returnStmt.value);
+            if (stmt->returnStmt.value) {
+                printExpr(stmt->returnStmt.value);
+            }
+            break;
+        case STMT_DECL:
+            printDecl(stmt->decl.decl);
             break;
         default:
             panic("unknown statement type %d\n", stmt->type);
@@ -151,7 +157,7 @@ void printStmt(Stmt* stmt) {
 void printDecl(Decl* decl) {
     switch (decl->type) {
         case DECL_FUNCTION:
-            printf("fn %s(", decl->function.name.chars);
+            printf("%s %s(",decl->function.returnType.chars, decl->function.name.chars);
             for (int i = 0; i < decl->function.count; i++) {
                 printf("%s", decl->function.parameters[i]->name.chars);
                 if (i < decl->function.count - 1) {
@@ -160,9 +166,11 @@ void printDecl(Decl* decl) {
             }
             printf(") ");
             printStmt(decl->function.body);
+            printf("\n");
             break;
         case DECL_VARIABLE:
-            printf("var %s", decl->variable.name.chars);
+            printf("%s %s", decl->variable.type.chars,
+                   decl->variable.name.chars);
             if (decl->variable.initializer) {
                 printf(" = ");
                 printExpr(decl->variable.initializer);
@@ -224,8 +232,52 @@ Op getOp(Token* token, bool isBinary) {
             return OP_REF;
         default:
             panic("line %d: unknown operator %d\n", token->line, token->type);
-    }    
+    }
     return OP_ERROR;
+}
+
+char* sprintStmt(Stmt* stmt) {
+    char buffer[1024];
+    switch (stmt->type) {
+        case STMT_EXPRESSION:
+            sprintf(buffer, "%s;", sprintExpr(stmt->expr.expression));
+            break;
+        case STMT_BLOCK:
+            sprintf(buffer, "{\n");
+            for (int i = 0; i < stmt->block.count; i++) {
+                sprintf(buffer, "%s%s", buffer,
+                        sprintStmt(stmt->block.statements[i]));
+            }
+            sprintf(buffer, "%s}", buffer);
+            break;
+        case STMT_IF:
+            sprintf(buffer, "if (%s) %s", sprintExpr(stmt->ifStmt.condition),
+                    sprintStmt(stmt->ifStmt.thenBranch));
+            if (stmt->ifStmt.elseBranch) {
+                sprintf(buffer, "%s else %s", buffer,
+                        sprintStmt(stmt->ifStmt.elseBranch));
+            }
+            break;
+        case STMT_WHILE:
+            sprintf(buffer, "while (%s) %s",
+                    sprintExpr(stmt->whileStmt.condition),
+                    sprintStmt(stmt->whileStmt.body));
+            break;
+        case STMT_RETURN:
+            if (stmt->returnStmt.value) {
+                sprintf(buffer, "return %s;",
+                        sprintExpr(stmt->returnStmt.value));
+            } else {
+                sprintf(buffer, "return;");
+            }
+            break;
+        case STMT_DECL:
+            sprintf(buffer, "decl;");
+            break;
+        default:
+            panic("unknown statement type %d\n", stmt->type);
+    }
+    return strdup(buffer);
 }
 
 char* sprintExpr(Expr* expr) {
@@ -233,7 +285,8 @@ char* sprintExpr(Expr* expr) {
     switch (expr->type) {
         case EXPR_BINARY:
             sprintf(buffer, "(%s %s %s)", sprintExpr(expr->binary.left),
-                    OptoString(expr->binary.op), sprintExpr(expr->binary.right));
+                    OptoString(expr->binary.op),
+                    sprintExpr(expr->binary.right));
             break;
         case EXPR_UNARY:
             sprintf(buffer, "(%s %s)", OptoString(expr->unary.op),
@@ -248,7 +301,8 @@ char* sprintExpr(Expr* expr) {
                     sprintf(buffer, "%f", expr->literal.value.floatVal);
                     break;
                 case TYPE_STRING:
-                    sprintf(buffer, "\"%s\"", expr->literal.value.stringVal.chars);
+                    sprintf(buffer, "\"%s\"",
+                            expr->literal.value.stringVal.chars);
                     break;
                 case TYPE_BOOL:
                     sprintf(buffer, "%s",
@@ -262,10 +316,12 @@ char* sprintExpr(Expr* expr) {
             sprintf(buffer, "%s", expr->variable.name.chars);
             break;
         case EXPR_CALL:
-            sprintf(buffer, "%s(", expr->call.name.chars);
-            for (int i = 0; i < expr->call.argumentsCount; i++) {
-                sprintf(buffer, "%s%s", buffer, sprintExpr(expr->call.arguments[i]));
-                if (i < expr->call.argumentsCount - 1) {
+            sprintf(buffer, "%s", sprintExpr(expr->call.callee));
+            sprintf(buffer, "%s(", buffer);
+            for (int i = 0; i < expr->call.argcount; i++) {
+                sprintf(buffer, "%s%s", buffer,
+                        sprintExpr(expr->call.arguments[i]));
+                if (i < expr->call.argcount - 1) {
                     sprintf(buffer, "%s, ", buffer);
                 }
             }
